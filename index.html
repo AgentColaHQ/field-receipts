@@ -258,6 +258,9 @@
 <div class="step">
   <label class="label" for="streamDate">5. Stream date</label>
   <input type="date" id="streamDate">
+  <label class="label" for="doneDate" style="margin-top:10px">Date completed</label>
+  <input type="date" id="doneDate">
+  <p class="note">Starts at today. Change it if you did the miles on another day.</p>
 </div>
 
 <div class="step">
@@ -422,6 +425,7 @@
     var d = new Date();
     var pad = function (n) { return (n < 10 ? "0" : "") + n; };
     el("streamDate").value = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+    el("doneDate").value = el("streamDate").value;
   })();
 
   // Build the comment buttons.
@@ -472,7 +476,7 @@
     state.reward = b.dataset.reward;
     press(el("rewardRow"), b); refresh(); savePrefs();
   });
-  ["username", "miles", "milesDone", "streamDate"].forEach(function (id) {
+  ["username", "miles", "milesDone", "streamDate", "doneDate"].forEach(function (id) {
     el(id).addEventListener("input", refresh);
   });
 
@@ -615,6 +619,15 @@
     var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return months[parseInt(p[1], 10) - 1] + " " + parseInt(p[2], 10) + ", " + p[0];
   }
+  function doneDateText() {
+    var v = el("doneDate").value;
+    if (!v) return "";
+    var p = v.split("-");
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return months[parseInt(p[1], 10) - 1] + " " + parseInt(p[2], 10) + ", " + p[0];
+  }
+  // "Date completed" on a finished mission, "Date logged" on a partial one.
+  function doneLabel() { return progress().complete ? "Date completed" : "Date logged"; }
   function commentText() {
     return state.comment >= 0 ? COMMENTS[state.comment] : "";
   }
@@ -627,7 +640,8 @@
     ];
     var pr = progress();
     if (!pr.complete) lines.push("Progress: " + pr.total + " of " + pr.owed + " miles done, " + pr.left + " left");
-    lines.push("Reward: " + state.reward, "Stream date: " + (dateText() || "[date]"));
+    lines.push("Reward: " + state.reward, "Stream date: " + (dateText() || "[date]"),
+      doneLabel() + ": " + (doneDateText() || "[date]"));
     if (commentText()) lines.push("", commentText());
     return lines.join("\n");
   }
@@ -786,10 +800,11 @@
     }
 
     var name = cleanName() || "USERNAME";
-    infoLine("REDEEMED BY", name.toUpperCase(), py + 56, C.pink, 38);
-    infoLine("ASSIGNMENT", assignmentText().toUpperCase(), py + 108, C.cyan, 34);
-    infoLine("REWARD", state.reward.toUpperCase(), py + 152, C.purple, 28);
-    infoLine("STREAM DATE", (dateText() || "DATE").toUpperCase(), py + 196, C.text, 28);
+    infoLine("REDEEMED BY", name.toUpperCase(), py + 50, C.pink, 36);
+    infoLine("ASSIGNMENT", assignmentText().toUpperCase(), py + 96, C.cyan, 32);
+    infoLine("REWARD", state.reward.toUpperCase(), py + 136, C.purple, 26);
+    infoLine("STREAM DATE", (dateText() || "DATE").toUpperCase(), py + 174, C.text, 26);
+    infoLine(doneLabel().toUpperCase(), (doneDateText() || "DATE").toUpperCase(), py + 212, C.green, 26);
 
     // Comment line
     var comment = commentText();
@@ -797,7 +812,7 @@
       var cs = fitFont("“" + comment + "”", "700", "Manrope, sans-serif", 30, pw - 60 - 160);
       ctx.font = "700 " + cs + "px Manrope, sans-serif";
       ctx.fillStyle = C.gold;
-      ctx.fillText("“" + comment + "”", lx, py + 246);
+      ctx.fillText("“" + comment + "”", lx, py + 252);
     }
 
     // Logo (Cola's head) bottom right of the panel
@@ -899,17 +914,18 @@
     row("ASSIGNMENT", assignmentText().toUpperCase(), 728);
     row("REWARD", state.reward.toUpperCase(), 764);
     row("STREAM DATE", (dateText() || "DATE").toUpperCase(), 800);
-    dashed(824);
+    row(doneLabel().toUpperCase(), (doneDateText() || "DATE").toUpperCase(), 836);
+    dashed(858);
 
     var comment = commentText();
-    if (comment) center("\u201C" + comment + "\u201D", 864, "500", 24);
+    if (comment) center("\u201C" + comment + "\u201D", 894, "500", 24);
 
-    center(RECEIPT_FOOTER[0], 912, "700", 26);
-    if (RECEIPT_FOOTER[1]) center(RECEIPT_FOOTER[1], 944, "500", 22);
+    center(RECEIPT_FOOTER[0], 934, "700", 26);
+    if (RECEIPT_FOOTER[1]) center(RECEIPT_FOOTER[1], 962, "500", 22);
 
     // Barcode (decoration, based on the receipt number)
     var seed = currentNo() * 9301 + 49297;
-    var bxp = cx - 170, by0 = 966, bh0 = 58;
+    var bxp = cx - 170, by0 = 980, bh0 = 44;
     while (bxp < cx + 170) {
       seed = (seed * 9301 + 49297) % 233280;
       var w = 2 + Math.floor(seed / 233280 * 4);
@@ -1276,6 +1292,7 @@
     el("zoom").value = 1;
     el("username").value = "";
     el("milesDone").value = "";
+    el("doneDate").value = todayValue();
     state.prev = 0; state.logged = false;
     state.numUsed = false; state.receiptNo = 0;
     refresh();
